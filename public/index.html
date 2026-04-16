@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Olles Bilrekond – CRM</title>
+<style>
+  :root {
+    --orange:#E86818; --orange-light:#FDF0E8; --orange-hover:#d05810;
+    --dark:#1E1E1E; --dark2:#2D2D2D;
+    --grey:#F5F5F5; --grey2:#E8E8E8;
+    --green:#2E7D32; --green-light:#E8F5E9;
+    --blue:#1565C0; --blue-light:#E3F2FD;
+    --red:#C62828; --red-light:#FFEBEE;
+    --yellow:#F57F17; --yellow-light:#FFFDE7;
+    --white:#fff; --text:#1E1E1E; --muted:#757575; --border:#E0E0E0;
+    --radius:8px; --shadow:0 1px 4px rgba(0,0,0,.10); --shadow-lg:0 4px 16px rgba(0,0,0,.13);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Segoe UI',Arial,sans-serif;background:#F2F2F2;color:var(--text);font-size:14px;}
+
+  .nav{background:var(--dark);color:#fff;display:flex;align-items:center;padding:0 20px;height:52px;gap:16px;box-shadow:0 2px 8px rgba(0,0,0,.3);position:sticky;top:0;z-index:100;}
+  .nav-logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:16px;}
+  .nav-logo-circle{width:32px;height:32px;background:var(--orange);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;}
+  .nav-badge{background:var(--orange);color:#fff;font-size:11px;padding:2px 8px;border-radius:12px;font-weight:600;}
+  .nav-right{margin-left:auto;display:flex;align-items:center;gap:12px;font-size:13px;color:#aaa;}
+  .ws-dot{width:8px;height:8px;border-radius:50%;background:#666;transition:background .3s;}
+  .ws-dot.connected{background:#4CAF50;animation:pulse 2s infinite;}
+  .ws-dot.error{background:#F44336;}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+  .loc-bar{background:#fff;border-bottom:2px solid var(--border);padding:0 20px;display:flex;align-items:center;gap:8px;height:44px;overflow-x:auto;}
+  .loc-bar-label{font-size:12px;color:var(--muted);font-weight:600;white-space:nowrap;margin-right:4px;}
+  .loc-pill{display:inline-flex;align-items:center;gap:6px;padding:5px 14px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid var(--border);background:#fff;color:var(--muted);transition:all .15s;white-space:nowrap;}
+  .loc-pill:hover{border-color:var(--orange);color:var(--orange);}
+  .loc-pill.active{background:var(--orange);border-color:var(--orange);color:#fff;}
+  .loc-pill.all-pill.active{background:var(--dark);border-color:var(--dark);color:#fff;}
+  .loc-dot{width:8px;height:8px;border-radius:50%;background:currentColor;}
+  .loc-add{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px dashed var(--border);background:#fff;color:var(--muted);transition:all .15s;}
+  .loc-add:hover{border-color:var(--orange);color:var(--orange);}
+
+  .tabs{background:#fff;border-bottom:2px solid var(--border);display:flex;padding:0 20px;gap:4px;}
+  .tab{padding:10px 18px;cursor:pointer;font-weight:500;font-size:13px;color:var(--muted);border-bottom:3px solid transparent;margin-bottom:-2px;transition:all .15s;}
+  .tab:hover{color:var(--orange);}
+  .tab.active{color:var(--orange);border-bottom-color:var(--orange);}
+  .tab-badge{background:var(--orange);color:#fff;font-size:10px;padding:1px 6px;border-radius:10px;margin-left:5px;}
+
+  .main{padding:20px;max-width:1400px;margin:0 auto;}
+  .page{display:none;} .page.active{display:block;}
+
+  .card{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;}
+  .card-title{font-size:15px;font-weight:700;color:var(--dark);margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+  .card-title .icon{width:28px;height:28px;background:var(--orange);border-radius:6px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;}
+
+  .kpi-row{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px;}
+  .kpi{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);padding:14px 16px;border-left:4px solid var(--border);}
+  .kpi.orange{border-left-color:var(--orange);} .kpi.green{border-left-color:var(--green);}
+  .kpi.blue{border-left-color:var(--blue);}     .kpi.yellow{border-left-color:var(--yellow);}
+  .kpi.red{border-left-color:var(--red);}
+  .kpi-val{font-size:26px;font-weight:700;} .kpi-lbl{font-size:12px;color:var(--muted);margin-top:2px;}
+
+  .badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600;}
+  .badge-bokad{background:#E3F2FD;color:#1565C0;}
+  .badge-inkort{background:var(--orange-light);color:var(--orange);}
+  .badge-klar{background:var(--green-light);color:var(--green);}
+  .badge-ejbokad{background:var(--red-light);color:var(--red);}
+  .badge-dot{width:6px;height:6px;border-radius:50%;background:currentColor;}
+
+  .tbl{width:100%;border-collapse:collapse;}
+  .tbl th{background:var(--dark);color:#fff;padding:10px 12px;text-align:left;font-size:12px;font-weight:600;}
+  .tbl th:first-child{border-radius:var(--radius) 0 0 0;} .tbl th:last-child{border-radius:0 var(--radius) 0 0;}
+  .tbl td{padding:10px 12px;border-bottom:1px solid var(--border);font-size:13px;vertical-align:middle;}
+  .tbl tr:last-child td{border-bottom:none;} .tbl tr:hover td{background:var(--grey);}
+  .tbl tr.row-inkort td{background:#FFF8F5;} .tbl tr.row-klar td{background:#F9FBF9;} .tbl tr.row-ejbokad td{background:#FFF5F5;}
+  .reg-pill{background:var(--dark);color:#fff;font-family:monospace;font-size:13px;font-weight:700;padding:3px 10px;border-radius:4px;letter-spacing:1px;}
+
+  .btn{display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all .15s;}
+  .btn-primary{background:var(--orange);color:#fff;} .btn-primary:hover{background:var(--orange-hover);}
+  .btn-success{background:var(--green);color:#fff;}  .btn-success:hover{background:#1B5E20;}
+  .btn-outline{background:#fff;color:var(--dark);border:1.5px solid var(--border);}
+  .btn-outline:hover{border-color:var(--orange);color:var(--orange);}
+  .btn-danger{background:var(--red);color:#fff;} .btn-sm{padding:4px 10px;font-size:12px;}
+
+  .anpr-panel{background:var(--dark);color:#fff;border-radius:var(--radius);padding:16px;margin-bottom:20px;}
+  .anpr-panel-title{font-size:13px;font-weight:700;color:var(--orange);margin-bottom:10px;display:flex;align-items:center;gap:8px;}
+  .anpr-feed{display:flex;gap:10px;flex-wrap:wrap;max-height:80px;overflow:hidden;}
+  .anpr-event{background:#2D2D2D;border-radius:6px;padding:8px 14px;display:flex;align-items:center;gap:10px;font-size:12px;animation:slideIn .3s ease;}
+  @keyframes slideIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+  .anpr-event .reg{font-family:monospace;font-weight:700;font-size:14px;background:#fff;color:var(--dark);padding:2px 8px;border-radius:3px;}
+  .anpr-event .direction{color:var(--orange);font-weight:600;}
+  .anpr-event .match{color:#4CAF50;} .anpr-event .nomatch{color:#FF8A65;}
+  .anpr-sim{display:flex;gap:8px;align-items:center;margin-top:12px;flex-wrap:wrap;}
+  .anpr-input{background:#2D2D2D;border:1.5px solid #444;color:#fff;padding:7px 12px;border-radius:6px;font-family:monospace;font-size:14px;letter-spacing:1px;width:150px;text-transform:uppercase;}
+  .anpr-input::placeholder{color:#666;letter-spacing:0;} .anpr-input:focus{outline:none;border-color:var(--orange);}
+
+  .form-row{display:grid;gap:12px;margin-bottom:12px;}
+  .form-row.cols2{grid-template-columns:1fr 1fr;} .form-row.cols3{grid-template-columns:1fr 1fr 1fr;}
+  label{font-size:12px;font-weight:600;color:var(--muted);display:block;margin-bottom:4px;}
+  input,select,textarea{width:100%;border:1.5px solid var(--border);border-radius:6px;padding:8px 11px;font-size:13px;color:var(--text);background:#fff;transition:border .15s;}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--orange);}
+  textarea{resize:vertical;min-height:70px;}
+
+  .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;align-items:center;justify-content:center;}
+  .modal-bg.open{display:flex;}
+  .modal{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow-lg);padding:24px;width:520px;max-width:95vw;max-height:90vh;overflow-y:auto;}
+  .modal-title{font-size:17px;font-weight:700;margin-bottom:18px;display:flex;justify-content:space-between;align-items:center;}
+  .modal-close{cursor:pointer;color:var(--muted);font-size:20px;line-height:1;}
+
+  .kassarow{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);}
+  .kassarow:last-child{border:none;}
+  .kassa-total{background:var(--dark);color:#fff;border-radius:var(--radius);padding:14px 18px;display:flex;justify-content:space-between;align-items:center;margin-top:16px;}
+
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  .flex{display:flex;gap:10px;align-items:center;}
+  .flex-between{display:flex;justify-content:space-between;align-items:center;}
+  .mt16{margin-top:16px;} .mb16{margin-bottom:16px;}
+  .text-muted{color:var(--muted);} .text-sm{font-size:12px;}
+  .text-green{color:var(--green);} .fw700{font-weight:700;}
+
+  .toast{position:fixed;bottom:20px;right:20px;background:var(--dark);color:#fff;padding:12px 18px;border-radius:8px;font-size:13px;z-index:999;animation:toastIn .3s;box-shadow:var(--shadow-lg);border-left:4px solid var(--orange);}
+  @keyframes toastIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+
+  .section-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}
+  .section-header h2{font-size:16px;font-weight:700;}
+  .fortnox-box{background:var(--blue-light);border:1.5px solid #90CAF9;border-radius:var(--radius);padding:16px;}
+  .fortnox-box h3{color:var(--blue);font-size:14px;font-weight:700;margin-bottom:8px;}
+  .no-data{text-align:center;padding:40px;color:var(--muted);}
+  .no-data .icon{font-size:36px;margin-bottom:8px;}
+
+  /* Overview */
+  .overview-loc-card{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);padding:20px;border-top:4px solid var(--orange);}
+  .overview-loc-title{font-size:16px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+  .overview-kpi-mini{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px;}
+  .kpi-mini{background:var(--grey);border-radius:6px;padding:10px;text-align:center;}
+  .kpi-mini-val{font-size:20px;font-weight:700;} .kpi-mini-lbl{font-size:11px;color:var(--muted);}
+
+  .loading{text-align:center;padding:40px;color:var(--muted);font-size:13px;}
+
+  @media(max-width:768px){
+    .kpi-row{grid-template-columns:repeat(2,1fr);}
+    .grid2{grid-template-columns:1fr;}
+    .form-row.cols2,.form-row.cols3{grid-template-columns:1fr;}
+    .overview-kpi-mini{grid-template-columns:repeat(2,1fr);}
+  }
+</style>
+</head>
+<body>
+
+<div class="nav">
+  <div class="nav-logo">
+    <div class="nav-logo-circle">🚗</div>
+    Olles Bilrekond
+    <span class="nav-badge">CRM</span>
+  </div>
+  <div class="nav-right">
+    <div class="flex" style="gap:5px">
+      <div class="ws-dot" id="ws-dot"></div>
+      <span id="ws-label" style="font-size:11px">Ansluter...</span>
+    </div>
+    <span id="clock">--:--</span>
+    <span id="nav-loc-name" style="font-weight:600;color:#fff">—</span>
+  </div>
+</div>
+
+<div class="loc-bar">
+  <span class="loc-bar-label">Anläggning:</span>
+  <div id="loc-pills" style="display:flex;gap:6px;flex-wrap:nowrap;"></div>
+  <div class="loc-add" onclick="openAddLocationModal()">+ Ny anläggning</div>
+</div>
+
+<div class="tabs" id="main-tabs">
+  <div class="tab active" onclick="showTab('dagsvy')">📋 Dagsvy <span class="tab-badge" id="tab-badge-inkort">0</span></div>
+  <div class="tab" onclick="showTab('bokningar')">📅 Bokningar</div>
+  <div class="tab" onclick="showTab('obokade')">🚨 Ej bokade <span class="tab-badge" id="tab-badge-ejbokad" style="background:var(--red)">0</span></div>
+  <div class="tab" onclick="showTab('dagskassa')">💰 Dagskassa</div>
+  <div class="tab overview-tab" style="display:none" onclick="showTab('oversikt')">🏢 Översikt</div>
+</div>
+
+<div class="main">
+
+  <!-- DAGSVY -->
+  <div class="page active" id="page-dagsvy">
+    <div class="anpr-panel">
+      <div class="anpr-panel-title">
+        <div class="ws-dot connected" style="width:10px;height:10px"></div>
+        ANPR Kamerafeed – <span id="anpr-loc-name">—</span>
+      </div>
+      <div class="anpr-feed" id="anpr-feed">
+        <div class="text-muted text-sm" style="color:#666">Inga händelser ännu idag...</div>
+      </div>
+      <div class="anpr-sim">
+        <input class="anpr-input" id="anpr-sim-input" placeholder="ABC123" maxlength="7">
+        <select id="anpr-direction" style="background:#2D2D2D;border:1.5px solid #444;color:#fff;padding:7px 10px;border-radius:6px;font-size:13px;">
+          <option value="in">↓ Kör IN</option>
+          <option value="out">↑ Kör UT</option>
+        </select>
+        <button class="btn btn-primary btn-sm" onclick="simulateANPR()">▶ Simulera ANPR</button>
+        <span class="text-sm" style="color:#666">← Testa med reg.nr</span>
+      </div>
+    </div>
+    <div class="kpi-row" id="kpi-row"></div>
+    <div class="card">
+      <div class="card-title">
+        <div class="icon">📋</div>
+        Dagens fordon – <span id="today-date"></span>
+        <div style="margin-left:auto"><button class="btn btn-primary btn-sm" onclick="openNewBookingModal()">+ Ny bokning</button></div>
+      </div>
+      <table class="tbl"><thead><tr>
+        <th>Reg.nr</th><th>Kund</th><th>Tjänst</th><th>Tid</th><th>Inkört</th><th>Status</th><th>Pris</th><th>Åtgärd</th>
+      </tr></thead><tbody id="dagsvy-tbody"></tbody></table>
+    </div>
+  </div>
+
+  <!-- BOKNINGAR -->
+  <div class="page" id="page-bokningar">
+    <div class="section-header">
+      <h2>📅 Bokningshantering – <span id="bokningar-loc-name"></span></h2>
+      <button class="btn btn-primary" onclick="openNewBookingModal()">+ Ny bokning</button>
+    </div>
+    <div class="card">
+      <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;">
+        <input type="text" placeholder="Sök reg.nr eller kund..." id="search-input" style="max-width:280px" oninput="renderBokningar()">
+        <select id="filter-status" onchange="renderBokningar()" style="width:160px">
+          <option value="">Alla statusar</option>
+          <option value="bokad">Bokad</option>
+          <option value="inkort">Inkört</option>
+          <option value="klar">Klar</option>
+          <option value="ejbokad">Ej bokad</option>
+        </select>
+        <select id="filter-date" onchange="renderBokningar()" style="width:160px">
+          <option value="today">Idag</option>
+          <option value="all">Alla datum</option>
+        </select>
+      </div>
+      <table class="tbl"><thead><tr>
+        <th>Reg.nr</th><th>Kund</th><th>Telefon</th><th>Tjänst</th><th>Datum</th><th>Status</th><th>Pris</th><th>Åtgärd</th>
+      </tr></thead><tbody id="bokningar-tbody"></tbody></table>
+    </div>
+  </div>
+
+  <!-- EJ BOKADE -->
+  <div class="page" id="page-obokade">
+    <div class="section-header"><h2>🚨 Ej bokade – <span id="obokade-loc-name"></span></h2></div>
+    <div class="card">
+      <div class="no-data" id="obokade-empty"><div class="icon">🔍</div>Inga ej bokade fordon idag</div>
+      <table class="tbl" id="obokade-table" style="display:none"><thead><tr>
+        <th>Reg.nr</th><th>Detekterad</th><th>Kund</th><th>Tjänst</th><th>Pris</th><th>Status</th><th>Åtgärd</th>
+      </tr></thead><tbody id="obokade-tbody"></tbody></table>
+    </div>
+  </div>
+
+  <!-- DAGSKASSA -->
+  <div class="page" id="page-dagskassa">
+    <div class="section-header">
+      <h2>💰 Dagskassa – <span id="kassa-date"></span></h2>
+      <div class="flex">
+        <button class="btn btn-outline" onclick="exportFortnox()">📤 Exportera till Fortnox</button>
+        <button class="btn btn-primary" onclick="closeDailyRegister()">✓ Stäng dag</button>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="card">
+        <div class="card-title"><div class="icon">✅</div>Slutförda – <span id="kassa-loc-name" style="font-weight:400;font-size:13px"></span></div>
+        <div id="kassa-list"></div>
+        <div class="kassa-total">
+          <div><div style="font-size:12px;color:#aaa">TOTAL DAGSOMSÄTTNING</div><div style="font-size:24px;font-weight:700;" id="kassa-total-val">0 kr</div></div>
+          <div style="text-align:right"><div style="font-size:12px;color:#aaa">Antal bilar</div><div style="font-size:24px;font-weight:700;" id="kassa-count">0</div></div>
+        </div>
+      </div>
+      <div>
+        <div class="fortnox-box mb16">
+          <h3>🔗 Fortnox CSV-export</h3>
+          <p style="font-size:12px;color:var(--blue);margin-bottom:10px;">Klicka "Exportera" för att ladda ner CSV-fil med dagens slutförda arbeten, redo att importera i Fortnox.</p>
+          <div style="background:#fff;border-radius:6px;padding:10px;font-size:11px;font-family:monospace;color:#333;max-height:200px;overflow-y:auto;" id="fortnox-preview"><span style="color:#999">// Klicka "Exportera till Fortnox" för att förhandsgranska...</span></div>
+        </div>
+        <div class="card"><div class="card-title"><div class="icon">📊</div>Statistik idag</div><div id="kassa-stats"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ÖVERSIKT -->
+  <div class="page" id="page-oversikt">
+    <div class="section-header"><h2>🏢 Översikt – Alla anläggningar</h2><span id="oversikt-date" class="text-muted text-sm"></span></div>
+    <div class="kpi-row" id="oversikt-kpi-row"></div>
+    <div class="grid2" id="oversikt-loc-grid"></div>
+  </div>
+
+</div><!-- /main -->
+
+<!-- MODAL – NY BOKNING -->
+<div class="modal-bg" id="booking-modal">
+  <div class="modal">
+    <div class="modal-title"><span id="modal-title-text">Ny bokning</span><span class="modal-close" onclick="closeModal('booking-modal')">✕</span></div>
+    <div class="form-row cols2">
+      <div><label>Reg.nr *</label><input id="f-regnr" placeholder="ABC123" style="text-transform:uppercase" maxlength="7"></div>
+      <div><label>Tjänst *</label><select id="f-service">
+        <option>Helrekond – 2 495 kr</option><option>Standard – 1 295 kr</option>
+        <option>Invändig – 795 kr</option><option>Polering – 2 995 kr</option>
+        <option>Keramiskt lackskydd – 6 449 kr</option><option>Begagnat rekond – 2 500 kr</option>
+        <option value="Övrigt">Övrigt – ange pris</option>
+      </select></div>
+    </div>
+    <div class="form-row cols2">
+      <div><label>Kundnamn</label><input id="f-name" placeholder="Förnamn Efternamn"></div>
+      <div><label>Telefon</label><input id="f-phone" placeholder="070-XXX XX XX"></div>
+    </div>
+    <div class="form-row cols3">
+      <div><label>Datum</label><input type="date" id="f-date"></div>
+      <div><label>Tid</label><input type="time" id="f-time" value="09:00"></div>
+      <div><label>Pris (kr)</label><input type="number" id="f-price" placeholder="0"></div>
+    </div>
+    <div class="form-row"><div><label>Anteckningar</label><textarea id="f-notes" placeholder="Ev. önskemål..."></textarea></div></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px;">
+      <button class="btn btn-outline" onclick="closeModal('booking-modal')">Avbryt</button>
+      <button class="btn btn-primary" onclick="saveBooking()">Spara bokning</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL – SLUTFÖR -->
+<div class="modal-bg" id="complete-modal">
+  <div class="modal" style="width:420px">
+    <div class="modal-title"><span>✅ Attestera slutfört arbete</span><span class="modal-close" onclick="closeModal('complete-modal')">✕</span></div>
+    <div id="complete-modal-body"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px;">
+      <button class="btn btn-outline" onclick="closeModal('complete-modal')">Avbryt</button>
+      <button class="btn btn-success" onclick="confirmComplete()">✓ Bekräfta klar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL – EJ BOKAD -->
+<div class="modal-bg" id="unbookeddetail-modal">
+  <div class="modal" style="width:460px">
+    <div class="modal-title"><span>🚨 Registrera ej bokad bil</span><span class="modal-close" onclick="closeModal('unbookeddetail-modal')">✕</span></div>
+    <div id="unbooked-modal-body"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px;">
+      <button class="btn btn-outline" onclick="closeModal('unbookeddetail-modal')">Avbryt</button>
+      <button class="btn btn-primary" onclick="saveUnbooked()">Spara & starta</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL – NY ANLÄGGNING -->
+<div class="modal-bg" id="addloc-modal">
+  <div class="modal" style="width:400px">
+    <div class="modal-title"><span>🏢 Lägg till anläggning</span><span class="modal-close" onclick="closeModal('addloc-modal')">✕</span></div>
+    <div class="form-row"><div><label>Namn *</label><input id="loc-name-input" placeholder="t.ex. Stockholm" maxlength="40"></div></div>
+    <div class="form-row"><div><label>Stad / ort</label><input id="loc-city-input" placeholder="t.ex. Stockholm"></div></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px;">
+      <button class="btn btn-outline" onclick="closeModal('addloc-modal')">Avbryt</button>
+      <button class="btn btn-primary" onclick="saveNewLocation()">Lägg till</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════════
+const API      = '';           // samma origin, tom = relativ sökväg
+const WS_URL   = `ws://${location.host}`;
+
+let locations        = [];
+let currentLocId     = null;   // null = översikt
+let currentTab       = 'dagsvy';
+let bookings         = [];     // cached för aktuell anläggning
+let pendingCompleteId = null;
+let pendingUnbookedReg = null;
+let editingId        = null;
+let ws               = null;
+
+const SERVICE_PRICES = {
+  'Helrekond – 2 495 kr':2495, 'Standard – 1 295 kr':1295,
+  'Invändig – 795 kr':795,     'Polering – 2 995 kr':2995,
+  'Keramiskt lackskydd – 6 449 kr':6449, 'Begagnat rekond – 2 500 kr':2500, 'Övrigt':0
+};
+const LOC_COLORS = ['#E86818','#1565C0','#2E7D32','#6A1B9A','#F57F17','#C62828'];
+
+function today()   { return new Date().toISOString().slice(0,10); }
+function nowTime() { return new Date().toLocaleTimeString('sv-SE',{hour:'2-digit',minute:'2-digit'}); }
+function fmtDate(d){ if(!d)return'—'; return new Date(d+'T00:00').toLocaleDateString('sv-SE',{day:'numeric',month:'short'}); }
+function currentLoc() { return locations.find(l=>l.id===currentLocId) || {}; }
+
+// ══════════════════════════════════════════════════════
+// API HELPERS
+// ══════════════════════════════════════════════════════
+async function apiGet(path) {
+  const r = await fetch(API + path);
+  if(!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+async function apiPost(path, body) {
+  const r = await fetch(API + path, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+  if(!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+async function apiPut(path, body) {
+  const r = await fetch(API + path, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+  if(!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+
+// ══════════════════════════════════════════════════════
+// WEBSOCKET
+// ══════════════════════════════════════════════════════
+function connectWS() {
+  ws = new WebSocket(WS_URL);
+  ws.onopen = () => {
+    document.getElementById('ws-dot').className  = 'ws-dot connected';
+    document.getElementById('ws-label').textContent = 'Realtid aktiv';
+  };
+  ws.onclose = () => {
+    document.getElementById('ws-dot').className  = 'ws-dot error';
+    document.getElementById('ws-label').textContent = 'Frånkopplad';
+    setTimeout(connectWS, 3000);
+  };
+  ws.onmessage = (e) => {
+    const msg = JSON.parse(e.data);
+    handleWSMessage(msg);
+  };
+}
+
+function handleWSMessage(msg) {
+  if(msg.type === 'connected') return;
+
+  if(msg.type === 'anpr_event') {
+    if(msg.locationId === currentLocId) {
+      addAnprFeedEvent(msg);
+    }
+    // Uppdatera bokning om det gäller aktuell anläggning
+    if(msg.booking && msg.booking.locationId === currentLocId) {
+      upsertBookingInCache(msg.booking);
+      refreshCurrentView();
+    }
+    // Toast-notis
+    const locName = (locations.find(l=>l.id===msg.locationId)||{}).name || msg.locationId;
+    if(msg.action === 'checked_in')        toast(`🚗 ${msg.regNr} inkört (${locName})`);
+    if(msg.action === 'unbooked_created')  toast(`⚠️ ${msg.regNr} ej bokad! (${locName})`, 'red');
+    if(msg.action === 'ready_for_attestation') toast(`🚗 ${msg.regNr} kört ut – attestera klar`, 'yellow');
+    return;
+  }
+
+  if(['booking_created','booking_updated'].includes(msg.type)) {
+    if(msg.booking.locationId === currentLocId) {
+      upsertBookingInCache(msg.booking);
+      refreshCurrentView();
+    }
+  }
+  if(msg.type === 'booking_deleted') {
+    bookings = bookings.filter(b=>b.id !== msg.id);
+    refreshCurrentView();
+  }
+}
+
+function upsertBookingInCache(updated) {
+  const idx = bookings.findIndex(b=>b.id===updated.id);
+  if(idx >= 0) bookings[idx] = updated;
+  else bookings.push(updated);
+}
+
+function addAnprFeedEvent(msg) {
+  const feed = document.getElementById('anpr-feed');
+  const muted = feed.querySelector('.text-muted');
+  if(muted) muted.remove();
+  const el = document.createElement('div');
+  el.className = 'anpr-event';
+  const matchTxt = msg.matched
+    ? `<span class="match">✓ ${msg.booking ? msg.booking.name || 'Bokad' : 'Bokad'}</span>`
+    : `<span class="nomatch">⚠ Ingen bokning</span>`;
+  el.innerHTML = `<span class="reg">${msg.regNr}</span><span class="direction">${msg.direction==='in'?'↓ IN':'↑ UT'}</span><span style="color:#aaa">${msg.time}</span>${matchTxt}`;
+  feed.insertBefore(el, feed.firstChild);
+  // Max 5 events
+  while(feed.children.length > 5) feed.removeChild(feed.lastChild);
+}
+
+// ══════════════════════════════════════════════════════
+// LOCATIONS
+// ══════════════════════════════════════════════════════
+async function loadLocations() {
+  locations = await apiGet('/api/locations');
+  renderLocBar();
+  if(locations.length > 0 && !currentLocId) {
+    await switchLocation(locations[0].id);
+  }
+}
+
+function renderLocBar() {
+  const pills = document.getElementById('loc-pills');
+  pills.innerHTML = locations.map(loc => `
+    <div class="loc-pill ${loc.id===currentLocId?'active':''}" onclick="switchLocation('${loc.id}')">
+      <div class="loc-dot"></div>${loc.name}
+    </div>
+  `).join('') + `
+    <div class="loc-pill all-pill ${currentLocId===null?'active':''}" onclick="switchLocation(null)">
+      🏢 Alla
+    </div>
+  `;
+}
+
+async function switchLocation(id) {
+  currentLocId = id;
+  renderLocBar();
+  const isAll = id === null;
+
+  document.querySelectorAll('.tab:not(.overview-tab)').forEach(t => t.style.display = isAll ? 'none' : '');
+  document.querySelector('.overview-tab').style.display = isAll ? '' : 'none';
+
+  if(isAll) {
+    showTab('oversikt');
+  } else {
+    const loc = currentLoc();
+    document.getElementById('nav-loc-name').textContent      = loc.name || '—';
+    document.getElementById('anpr-loc-name').textContent     = loc.name || '—';
+    document.getElementById('bokningar-loc-name').textContent = loc.name || '—';
+    document.getElementById('obokade-loc-name').textContent   = loc.name || '—';
+    document.getElementById('kassa-loc-name').textContent     = loc.name || '—';
+    await loadBookings();
+    showTab('dagsvy');
+  }
+}
+
+async function loadBookings() {
+  if(!currentLocId) return;
+  bookings = await apiGet(`/api/bookings?location_id=${currentLocId}`);
+}
+
+function openAddLocationModal() {
+  document.getElementById('loc-name-input').value = '';
+  document.getElementById('loc-city-input').value = '';
+  document.getElementById('addloc-modal').classList.add('open');
+  setTimeout(()=>document.getElementById('loc-name-input').focus(),100);
+}
+
+async function saveNewLocation() {
+  const name = document.getElementById('loc-name-input').value.trim();
+  if(!name) { toast('Ange namn','red'); return; }
+  const loc = await apiPost('/api/locations', { name, city: document.getElementById('loc-city-input').value.trim() || name });
+  locations.push(loc);
+  closeModal('addloc-modal');
+  await switchLocation(loc.id);
+  toast(`✅ Anläggning "${name}" skapad!`, 'green');
+}
+
+// ══════════════════════════════════════════════════════
+// TABS
+// ══════════════════════════════════════════════════════
+function showTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  const tabIds = ['dagsvy','bokningar','obokade','dagskassa','oversikt'];
+  const allTabs = document.querySelectorAll('.tab');
+  const idx = tabIds.indexOf(tab);
+  if(allTabs[idx]) allTabs[idx].classList.add('active');
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  const page = document.getElementById('page-'+tab);
+  if(page) page.classList.add('active');
+  refreshCurrentView();
+}
+
+function refreshCurrentView() {
+  if(currentLocId === null) { renderOversikt(); return; }
+  if(currentTab==='dagsvy')    renderDagsvy();
+  if(currentTab==='bokningar') renderBokningar();
+  if(currentTab==='obokade')   renderObokade();
+  if(currentTab==='dagskassa') renderKassa();
+}
+
+// ══════════════════════════════════════════════════════
+// DAGSVY
+// ══════════════════════════════════════════════════════
+function renderDagsvy() {
+  const todays = bookings.filter(b=>b.date===today());
+  const tbody  = document.getElementById('dagsvy-tbody');
+  tbody.innerHTML = todays.length ? todays.map(b=>`
+    <tr class="row-${b.status}">
+      <td><span class="reg-pill">${b.regNr}</span></td>
+      <td><div class="fw700">${b.name||'—'}</div><div class="text-muted text-sm">${b.phone||''}</div></td>
+      <td>${b.service.split(' – ')[0]||b.service}</td>
+      <td>${b.time||'—'}</td>
+      <td>${b.arrivedAt?`<span style="color:var(--orange);font-weight:600">${b.arrivedAt}</span>`:'<span class="text-muted">—</span>'}</td>
+      <td>${statusBadge(b.status)}</td>
+      <td class="fw700">${b.price?b.price.toLocaleString('sv-SE')+' kr':'—'}</td>
+      <td>${actionBtns(b)}</td>
+    </tr>
+  `).join('') : '<tr><td colspan="8" class="no-data">Inga bokningar idag</td></tr>';
+
+  const bokad   = todays.filter(b=>b.status==='bokad').length;
+  const inkort  = todays.filter(b=>b.status==='inkort').length;
+  const klar    = todays.filter(b=>b.status==='klar').length;
+  const ejbok   = todays.filter(b=>b.unbooked).length;
+  const oms     = todays.filter(b=>b.status==='klar').reduce((s,b)=>s+b.price,0);
+  document.getElementById('kpi-row').innerHTML = `
+    <div class="kpi blue"><div class="kpi-val">${bokad}</div><div class="kpi-lbl">Väntande</div></div>
+    <div class="kpi orange"><div class="kpi-val">${inkort}</div><div class="kpi-lbl">Pågående</div></div>
+    <div class="kpi green"><div class="kpi-val">${klar}</div><div class="kpi-lbl">Klara</div></div>
+    <div class="kpi red"><div class="kpi-val">${ejbok}</div><div class="kpi-lbl">Ej bokade</div></div>
+    <div class="kpi yellow"><div class="kpi-val">${oms.toLocaleString('sv-SE')} kr</div><div class="kpi-lbl">Dagens omsättning</div></div>
+  `;
+  document.getElementById('tab-badge-inkort').textContent  = inkort;
+  document.getElementById('tab-badge-ejbokad').textContent = ejbok;
+  document.getElementById('today-date').textContent = new Date().toLocaleDateString('sv-SE',{weekday:'long',day:'numeric',month:'long'});
+}
+
+// ══════════════════════════════════════════════════════
+// ÖVERSIKT
+// ══════════════════════════════════════════════════════
+async function renderOversikt() {
+  document.getElementById('oversikt-date').textContent = new Date().toLocaleDateString('sv-SE',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  document.getElementById('oversikt-loc-grid').innerHTML = '<div class="loading">Laddar...</div>';
+
+  // Hämta data för alla anläggningar parallellt
+  const allData = await Promise.all(locations.map(loc =>
+    apiGet(`/api/bookings?location_id=${loc.id}&date=${today()}`).then(bks => ({ loc, bks }))
+  ));
+
+  let tBokad=0, tInkort=0, tKlar=0, tOms=0;
+  allData.forEach(({bks}) => {
+    tBokad  += bks.filter(b=>b.status==='bokad').length;
+    tInkort += bks.filter(b=>b.status==='inkort').length;
+    tKlar   += bks.filter(b=>b.status==='klar').length;
+    tOms    += bks.filter(b=>b.status==='klar').reduce((s,b)=>s+b.price,0);
+  });
+
+  document.getElementById('oversikt-kpi-row').innerHTML = `
+    <div class="kpi blue"><div class="kpi-val">${tBokad}</div><div class="kpi-lbl">Väntande (alla)</div></div>
+    <div class="kpi orange"><div class="kpi-val">${tInkort}</div><div class="kpi-lbl">Pågående (alla)</div></div>
+    <div class="kpi green"><div class="kpi-val">${tKlar}</div><div class="kpi-lbl">Klara (alla)</div></div>
+    <div class="kpi yellow"><div class="kpi-val">${tOms.toLocaleString('sv-SE')} kr</div><div class="kpi-lbl">Total omsättning idag</div></div>
+    <div class="kpi orange"><div class="kpi-val">${locations.length}</div><div class="kpi-lbl">Anläggningar</div></div>
+  `;
+
+  document.getElementById('oversikt-loc-grid').innerHTML = allData.map(({loc, bks}, idx) => {
+    const bokad  = bks.filter(b=>b.status==='bokad').length;
+    const inkort = bks.filter(b=>b.status==='inkort').length;
+    const klar   = bks.filter(b=>b.status==='klar').length;
+    const ejbok  = bks.filter(b=>b.unbooked).length;
+    const oms    = bks.filter(b=>b.status==='klar').reduce((s,b)=>s+b.price,0);
+    const color  = LOC_COLORS[idx % LOC_COLORS.length];
+    return `
+      <div class="overview-loc-card" style="border-top-color:${color}">
+        <div class="overview-loc-title">
+          <div style="width:12px;height:12px;border-radius:50%;background:${color}"></div>
+          ${loc.name}
+          <button class="btn btn-outline btn-sm" style="margin-left:auto" onclick="switchLocation('${loc.id}')">Öppna →</button>
+        </div>
+        <div class="overview-kpi-mini">
+          <div class="kpi-mini"><div class="kpi-mini-val" style="color:#1565C0">${bokad}</div><div class="kpi-mini-lbl">Väntande</div></div>
+          <div class="kpi-mini"><div class="kpi-mini-val" style="color:${color}">${inkort}</div><div class="kpi-mini-lbl">Pågående</div></div>
+          <div class="kpi-mini"><div class="kpi-mini-val" style="color:#2E7D32">${klar}</div><div class="kpi-mini-lbl">Klara</div></div>
+          <div class="kpi-mini"><div class="kpi-mini-val" style="color:#2E7D32">${oms.toLocaleString('sv-SE')} kr</div><div class="kpi-mini-lbl">Omsättning</div></div>
+        </div>
+        ${ejbok?`<div style="background:var(--red-light);border-radius:6px;padding:8px 12px;font-size:12px;color:var(--red);margin-bottom:8px;font-weight:600;">⚠ ${ejbok} ej bokad(e)</div>`:''}
+        ${bks.filter(b=>b.status==='inkort').map(b=>`
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-top:1px solid var(--border);font-size:12px;">
+            <span class="reg-pill" style="font-size:11px">${b.regNr}</span>
+            <span>${b.service.split(' – ')[0]||b.service}</span>
+            <span class="badge badge-inkort">Pågående</span>
+          </div>
+        `).join('')||'<div class="text-muted text-sm" style="padding-top:4px">Inga inne just nu</div>'}
+      </div>
+    `;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════════════
+// BOKNINGAR
+// ══════════════════════════════════════════════════════
+function renderBokningar() {
+  const q  = (document.getElementById('search-input').value||'').toLowerCase();
+  const sf = document.getElementById('filter-status').value;
+  const df = document.getElementById('filter-date').value;
+  const filtered = bookings.filter(b=>
+    (!q  || b.regNr.toLowerCase().includes(q) || b.name.toLowerCase().includes(q)) &&
+    (!sf || b.status===sf) &&
+    (df!=='today'||b.date===today())
+  );
+  document.getElementById('bokningar-tbody').innerHTML = filtered.map(b=>`
+    <tr>
+      <td><span class="reg-pill">${b.regNr}</span></td>
+      <td>${b.name||'—'}</td><td>${b.phone||'—'}</td>
+      <td style="font-size:12px">${b.service||'—'}</td>
+      <td>${fmtDate(b.date)} ${b.time}</td>
+      <td>${statusBadge(b.status)}</td>
+      <td class="fw700">${b.price?b.price.toLocaleString('sv-SE')+' kr':'—'}</td>
+      <td><button class="btn btn-outline btn-sm" onclick="editBooking(${b.id})">✏ Redigera</button></td>
+    </tr>
+  `).join('')||'<tr><td colspan="8" class="no-data">Inga bokningar</td></tr>';
+}
+
+function renderObokade() {
+  const ejbok = bookings.filter(b=>b.unbooked && b.date===today());
+  document.getElementById('obokade-empty').style.display = ejbok.length?'none':'block';
+  document.getElementById('obokade-table').style.display = ejbok.length?'table':'none';
+  document.getElementById('obokade-tbody').innerHTML = ejbok.map(b=>`
+    <tr>
+      <td><span class="reg-pill">${b.regNr}</span></td>
+      <td>${b.arrivedAt||'—'}</td>
+      <td>${b.name||'<span class="text-muted">Ej angiven</span>'}</td>
+      <td style="font-size:12px">${b.service||'<span class="text-muted">Ej angiven</span>'}</td>
+      <td>${b.price?b.price.toLocaleString('sv-SE')+' kr':'—'}</td>
+      <td>${statusBadge(b.status)}</td>
+      <td>${!b.name?`<button class="btn btn-danger btn-sm" onclick="openUnbookedDetail('${b.regNr}')">Fyll i uppgifter</button>`:actionBtns(b)}</td>
+    </tr>
+  `).join('');
+}
+
+// ══════════════════════════════════════════════════════
+// DAGSKASSA
+// ══════════════════════════════════════════════════════
+function renderKassa() {
+  const klara = bookings.filter(b=>b.status==='klar'&&b.date===today());
+  const total = klara.reduce((s,b)=>s+b.price,0);
+  document.getElementById('kassa-date').textContent      = new Date().toLocaleDateString('sv-SE',{weekday:'long',day:'numeric',month:'long'});
+  document.getElementById('kassa-total-val').textContent  = total.toLocaleString('sv-SE')+' kr';
+  document.getElementById('kassa-count').textContent      = klara.length;
+  document.getElementById('kassa-list').innerHTML = klara.length ? klara.map(b=>`
+    <div class="kassarow">
+      <div>
+        <div class="flex"><span class="reg-pill" style="font-size:12px">${b.regNr}</span><span style="margin-left:8px">${b.name||'Okänd'}</span></div>
+        <div class="text-muted text-sm" style="margin-top:3px">${b.service} · Klar: ${b.completedAt}</div>
+      </div>
+      <div class="fw700 text-green">${b.price.toLocaleString('sv-SE')} kr</div>
+    </div>
+  `).join(''):'<div class="no-data">Inga slutförda arbeten ännu</div>';
+  const svcCount = {};
+  klara.forEach(b=>{ const s=b.service.split(' – ')[0]; svcCount[s]=(svcCount[s]||0)+1; });
+  document.getElementById('kassa-stats').innerHTML = Object.entries(svcCount).map(([s,c])=>`
+    <div class="kassarow"><span>${s}</span><span class="badge badge-klar">${c} st</span></div>
+  `).join('')||'<div class="text-muted text-sm">—</div>';
+}
+
+async function exportFortnox() {
+  try {
+    const preview = await apiGet(`/api/fortnox/preview?location_id=${currentLocId}&date=${today()}`);
+    if(!preview.count) { toast('Inga slutförda arbeten att exportera','yellow'); return; }
+    // Visa preview
+    const rows = ['RegNr;Kund;Telefon;Tjänst;Pris;Datum;Klar', ...preview.rows.map(r=>`${r.reg_nr};${r.customer_name||'Okänd'};${r.phone||''};${r.service};${r.price};${r.booking_date};${r.completed_at||''}`)];
+    document.getElementById('fortnox-preview').innerHTML = `<pre style="font-size:11px;white-space:pre-wrap;color:#1565C0">${rows.join('\n')}</pre>`;
+    // Nedladdning via backend
+    window.location.href = `/api/fortnox/export?location_id=${currentLocId}&date=${today()}`;
+    toast('📤 Fortnox-fil exporterad!','green');
+  } catch(e) {
+    toast('Exportfel: '+e.message,'red');
+  }
+}
+
+function closeDailyRegister() {
+  const klara = bookings.filter(b=>b.status==='klar'&&b.date===today());
+  if(!klara.length){toast('Inga slutförda arbeten','yellow');return;}
+  toast(`✅ Dag stängd – ${klara.length} bilar, ${klara.reduce((s,b)=>s+b.price,0).toLocaleString('sv-SE')} kr`);
+}
+
+// ══════════════════════════════════════════════════════
+// ANPR SIMULERING
+// ══════════════════════════════════════════════════════
+async function simulateANPR() {
+  const raw = document.getElementById('anpr-sim-input').value.trim().toUpperCase().replace(/\s/g,'');
+  const dir = document.getElementById('anpr-direction').value;
+  if(!raw){ toast('Ange ett reg.nr'); return; }
+  try {
+    await apiPost('/api/anpr/simulate', { regNr: raw, direction: dir, locationId: currentLocId });
+    document.getElementById('anpr-sim-input').value = '';
+    await loadBookings();
+    refreshCurrentView();
+  } catch(e) { toast('Fel: '+e.message,'red'); }
+}
+
+// ══════════════════════════════════════════════════════
+// ACTIONS
+// ══════════════════════════════════════════════════════
+async function manualCheckin(id) {
+  try {
+    const updated = await apiPost(`/api/bookings/${id}/checkin`, {});
+    upsertBookingInCache(updated);
+    toast(`${updated.regNr} manuellt incheckad`);
+    refreshCurrentView();
+  } catch(e){ toast('Fel: '+e.message,'red'); }
+}
+
+function openCompleteModal(id) {
+  pendingCompleteId = id;
+  const b = bookings.find(x=>x.id===id);
+  document.getElementById('complete-modal-body').innerHTML = `
+    <div style="background:var(--green-light);border-radius:8px;padding:14px;margin-bottom:14px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <span class="reg-pill">${b.regNr}</span>
+        <span style="font-weight:700;color:var(--green)">${b.price?b.price.toLocaleString('sv-SE')+' kr':'—'}</span>
+      </div>
+      <div style="margin-top:8px;font-size:13px"><b>${b.name||'Okänd kund'}</b> · ${b.service}</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:4px">Inkört: ${b.arrivedAt} · Klar: ${nowTime()}</div>
+    </div>
+    <div><label>Eventuell kommentar</label><textarea id="complete-note" placeholder="Allt OK..."></textarea></div>
+  `;
+  document.getElementById('complete-modal').classList.add('open');
+}
+
+async function confirmComplete() {
+  try {
+    const note    = document.getElementById('complete-note').value;
+    const updated = await apiPost(`/api/bookings/${pendingCompleteId}/complete`, { note });
+    upsertBookingInCache(updated);
+    toast(`✅ ${updated.regNr} attesterad som Klar!`);
+    closeModal('complete-modal');
+    refreshCurrentView();
+  } catch(e){ toast('Fel: '+e.message,'red'); }
+}
+
+function openUnbookedDetail(regNr) {
+  pendingUnbookedReg = regNr;
+  document.getElementById('unbooked-modal-body').innerHTML = `
+    <div style="background:var(--red-light);border-radius:8px;padding:12px;margin-bottom:14px;">
+      <span class="reg-pill">${regNr}</span>
+      <span style="margin-left:10px;font-size:13px;color:var(--red)">Detekterad av ANPR – ingen bokning hittad</span>
+    </div>
+    <div class="form-row cols2">
+      <div><label>Kundnamn</label><input id="ub-name" placeholder="Förnamn Efternamn"></div>
+      <div><label>Telefon</label><input id="ub-phone" placeholder="070-XXX XX XX"></div>
+    </div>
+    <div class="form-row cols2">
+      <div><label>Tjänst</label><select id="ub-service" onchange="updateUnbookedPrice()">
+        <option>Helrekond – 2 495 kr</option><option>Standard – 1 295 kr</option>
+        <option>Invändig – 795 kr</option><option>Polering – 2 995 kr</option><option>Övrigt</option>
+      </select></div>
+      <div><label>Pris (kr)</label><input type="number" id="ub-price" placeholder="0"></div>
+    </div>
+    <div><label>Anteckningar</label><textarea id="ub-notes" placeholder="Ev. önskemål..."></textarea></div>
+  `;
+  document.getElementById('unbookeddetail-modal').classList.add('open');
+  updateUnbookedPrice();
+}
+
+function updateUnbookedPrice() {
+  const svc = document.getElementById('ub-service').value;
+  document.getElementById('ub-price').value = SERVICE_PRICES[svc]||'';
+}
+
+async function saveUnbooked() {
+  const b = bookings.find(x=>x.regNr===pendingUnbookedReg && x.unbooked && x.date===today());
+  if(!b){ toast('Bokning saknas','red'); return; }
+  try {
+    const updated = await apiPut(`/api/bookings/${b.id}`, {
+      name:    document.getElementById('ub-name').value,
+      phone:   document.getElementById('ub-phone').value,
+      service: document.getElementById('ub-service').value,
+      price:   parseInt(document.getElementById('ub-price').value)||0,
+      notes:   document.getElementById('ub-notes').value,
+      status:  'inkort',
+    });
+    upsertBookingInCache(updated);
+    toast(`${b.regNr} registrerad och pågående`);
+    closeModal('unbookeddetail-modal');
+    showTab('dagsvy');
+  } catch(e){ toast('Fel: '+e.message,'red'); }
+}
+
+// ══════════════════════════════════════════════════════
+// BOOKING MODAL
+// ══════════════════════════════════════════════════════
+function openNewBookingModal() {
+  editingId = null;
+  document.getElementById('modal-title-text').textContent = 'Ny bokning – '+(currentLoc().name||'');
+  document.getElementById('f-regnr').value='';
+  document.getElementById('f-name').value='';
+  document.getElementById('f-phone').value='';
+  document.getElementById('f-service').value='Helrekond – 2 495 kr';
+  document.getElementById('f-date').value=today();
+  document.getElementById('f-time').value='09:00';
+  document.getElementById('f-price').value='2495';
+  document.getElementById('f-notes').value='';
+  document.getElementById('booking-modal').classList.add('open');
+}
+
+function editBooking(id) {
+  editingId = id;
+  const b   = bookings.find(x=>x.id===id);
+  document.getElementById('modal-title-text').textContent='Redigera bokning';
+  document.getElementById('f-regnr').value=b.regNr;
+  document.getElementById('f-name').value=b.name;
+  document.getElementById('f-phone').value=b.phone;
+  document.getElementById('f-service').value=b.service;
+  document.getElementById('f-date').value=b.date;
+  document.getElementById('f-time').value=b.time;
+  document.getElementById('f-price').value=b.price;
+  document.getElementById('f-notes').value=b.notes;
+  document.getElementById('booking-modal').classList.add('open');
+}
+
+document.getElementById('f-service').addEventListener('change',function(){
+  const p=SERVICE_PRICES[this.value]; if(p!==undefined) document.getElementById('f-price').value=p;
+});
+
+async function saveBooking() {
+  const regNr = document.getElementById('f-regnr').value.trim().toUpperCase();
+  if(!regNr){ toast('Ange reg.nr','red'); return; }
+  const data = {
+    locationId: currentLocId,
+    regNr, name:document.getElementById('f-name').value.trim(),
+    phone:document.getElementById('f-phone').value.trim(),
+    service:document.getElementById('f-service').value,
+    date:document.getElementById('f-date').value,
+    time:document.getElementById('f-time').value,
+    price:parseInt(document.getElementById('f-price').value)||0,
+    notes:document.getElementById('f-notes').value.trim(),
+  };
+  try {
+    if(editingId) {
+      const updated = await apiPut(`/api/bookings/${editingId}`, data);
+      upsertBookingInCache(updated);
+      toast('Bokning uppdaterad');
+    } else {
+      const created = await apiPost('/api/bookings', data);
+      bookings.push(created);
+      toast('Bokning skapad – '+(currentLoc().name||''));
+    }
+    closeModal('booking-modal');
+    refreshCurrentView();
+  } catch(e){ toast('Fel: '+e.message,'red'); }
+}
+
+// ══════════════════════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════════════════════
+function statusBadge(s) {
+  const map={bokad:['badge-bokad','Bokad'],inkort:['badge-inkort','Inkört'],klar:['badge-klar','Klar'],ejbokad:['badge-ejbokad','Ej bokad']};
+  const[cls,lbl]=map[s]||['badge-bokad','Okänd'];
+  return `<span class="badge ${cls}"><span class="badge-dot"></span>${lbl}</span>`;
+}
+
+function actionBtns(b) {
+  if(b.status==='bokad')  return `<button class="btn btn-outline btn-sm" onclick="manualCheckin(${b.id})">↓ Checka in</button>`;
+  if(b.status==='inkort') return `<button class="btn btn-success btn-sm" onclick="openCompleteModal(${b.id})">✓ Attestera klar</button>`;
+  if(b.status==='klar')   return `<span class="text-green text-sm fw700">✓ Klar ${b.completedAt}</span>`;
+  if(b.status==='ejbokad'&&!b.name) return `<button class="btn btn-danger btn-sm" onclick="openUnbookedDetail('${b.regNr}')">Fyll i uppgifter</button>`;
+  return '';
+}
+
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+function toast(msg, type='') {
+  const el=document.createElement('div'); el.className='toast';
+  if(type==='red')   el.style.borderLeftColor='var(--red)';
+  if(type==='green') el.style.borderLeftColor='var(--green)';
+  if(type==='yellow')el.style.borderLeftColor='var(--yellow)';
+  el.textContent=msg; document.body.appendChild(el);
+  setTimeout(()=>el.remove(),3000);
+}
+
+function updateClock(){ document.getElementById('clock').textContent=new Date().toLocaleTimeString('sv-SE',{hour:'2-digit',minute:'2-digit'}); }
+
+// ══════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════
+updateClock();
+setInterval(updateClock, 10000);
+document.getElementById('anpr-sim-input').addEventListener('keydown', e=>{ if(e.key==='Enter') simulateANPR(); });
+connectWS();
+loadLocations();
+</script>
+</body>
+</html>
